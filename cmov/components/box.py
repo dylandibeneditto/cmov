@@ -23,7 +23,7 @@ class Box(Component):
         fill = self._with_alpha(self.color, self.opacity)
         scaled_w = self.w * self.scale
         scaled_h = self.h * self.scale
-        box_draw.rectangle([int(self.x), int(self.y), int(self.x + scaled_w), int(self.y + scaled_h)], fill=fill)
+        box_draw.rectangle([round(self.x), round(self.y), round(self.x + scaled_w), round(self.y + scaled_h)], fill=fill)
         image.paste(box_img, (0, 0), box_img)
 
     def _with_alpha(self, color, opacity):
@@ -53,10 +53,10 @@ class Box(Component):
 
     def fadein(self, easing=ease_out):
         self.opacity = 0
-        self.y += 10 
+        self.y += self.h * self.scale
         return CompositeAnimation.parallel(
             Animation(self, prop="opacity", start=0.0, end=1.0, easing=easing),
-            (Animation(self, prop="y", start=self.y, end=self.y-10, easing=easing), 0.5)
+            (Animation(self, prop="y", start=self.y, end=self.y-self.h * self.scale, easing=easing), 0.5)
         )
 
     def moveto(self, x, y, easing=ease_out):

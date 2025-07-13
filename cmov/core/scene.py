@@ -31,31 +31,30 @@ class Scene:
                         anim_duration = duration_frames
                     result.extend(self._flatten_animations(anim, start_frame, anim_duration))
             elif mode == 'stagger':
-                # Each starts after i*stagger, all finish at total duration
-                if n == 1 or stagger == 0:
-                    per_duration = duration_frames
+                # Each starts after i*stagger, each animation gets duration_frames
+                # Interpret stagger as a timecode string if possible
+                if isinstance(stagger, str):
+                    stagger_frames = self.parse_time(stagger)
                 else:
-                    per_duration = duration_frames - stagger * (n - 1)
-                    per_duration = max(per_duration, 0)
+                    stagger_frames = int(stagger)
                 for i, anim_tuple in enumerate(anims):
                     if isinstance(anim_tuple, tuple):
                         anim, weight = anim_tuple
                         if isinstance(weight, str):
                             anim_duration = self.parse_time(weight)
                         else:
-                            anim_duration = per_duration if not isinstance(weight, str) else self.parse_time(weight)
+                            anim_duration = duration_frames if not isinstance(weight, str) else self.parse_time(weight)
                     else:
                         anim = anim_tuple
-                        anim_duration = per_duration
-                    child_start = start_frame + i * stagger
+                        anim_duration = duration_frames
+                    child_start = start_frame + i * stagger_frames
                     result.extend(self._flatten_animations(anim, child_start, anim_duration))
             elif mode == 'chain':
-                # Each starts after previous ends, with gap=stagger
-                total_gap = stagger * (n - 1)
-                if n == 1:
-                    per_duration = duration_frames
+                # Each starts after previous ends, with gap=stagger (interpreted as timecode)
+                if isinstance(stagger, str):
+                    gap_frames = self.parse_time(stagger)
                 else:
-                    per_duration = (duration_frames - total_gap) // n if duration_frames > total_gap else 0
+                    gap_frames = int(stagger)
                 child_start = start_frame
                 for i, anim_tuple in enumerate(anims):
                     if isinstance(anim_tuple, tuple):
@@ -63,12 +62,12 @@ class Scene:
                         if isinstance(weight, str):
                             anim_duration = self.parse_time(weight)
                         else:
-                            anim_duration = per_duration if not isinstance(weight, str) else self.parse_time(weight)
+                            anim_duration = duration_frames if not isinstance(weight, str) else self.parse_time(weight)
                     else:
                         anim = anim_tuple
-                        anim_duration = per_duration
+                        anim_duration = duration_frames
                     result.extend(self._flatten_animations(anim, child_start, anim_duration))
-                    child_start += anim_duration + stagger
+                    child_start += anim_duration + gap_frames
         elif hasattr(animation, 'component') and hasattr(animation, 'prop'):
             result.append((animation.component, animation.prop, animation, start_frame, start_frame + duration_frames, duration_frames))
         return result
@@ -155,11 +154,9 @@ class Scene:
 
     def render(self, output_path="output.mp4"):
         timeline_frames = []
-        total_frames = 0
         for anim, dur in self.timeline:
             frames = self.parse_time(dur)
             timeline_frames.append((anim, frames))
-            total_frames += frames
 
         flat_animations = []
         cursor = 0
@@ -169,9 +166,14 @@ class Scene:
 
         # Determine when each component first appears (first animation referencing it)
         component_first_frame = {}
+        max_end_frame = 0
         for comp, p, anim, start, end, duration in flat_animations:
             if comp not in component_first_frame or start < component_first_frame[comp]:
                 component_first_frame[comp] = start
+            if end > max_end_frame:
+                max_end_frame = end
+
+        total_frames = max_end_frame
 
         with Video(output_path, (self.width, self.height), fps=self.fps) as video:
             frame_counter = 0
