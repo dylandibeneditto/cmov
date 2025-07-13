@@ -7,22 +7,68 @@ class Scene:
         """
         Recursively flatten all animations (including inside composites) into a list of
         (component, prop, animation, anim_start_frame, anim_end_frame, anim_duration)
+        Handles correct timing for parallel, chain, and stagger composite animations.
         """
         result = []
         if animation is None:
             return result
         if hasattr(animation, 'animations'):
-            for anim_tuple in getattr(animation, 'animations', []):
-                if isinstance(anim_tuple, tuple):
-                    anim, weight = anim_tuple
-                    if isinstance(weight, str):
-                        anim_duration = self.parse_time(weight)
+            mode = getattr(animation, 'mode', 'parallel')
+            stagger = getattr(animation, 'stagger', 0)
+            anims = getattr(animation, 'animations', [])
+            n = len(anims)
+            if mode == 'parallel':
+                # All start at the same time, share duration_frames
+                for anim_tuple in anims:
+                    if isinstance(anim_tuple, tuple):
+                        anim, weight = anim_tuple
+                        if isinstance(weight, str):
+                            anim_duration = self.parse_time(weight)
+                        else:
+                            anim_duration = duration_frames if not isinstance(weight, str) else self.parse_time(weight)
                     else:
-                        anim_duration = duration_frames if not isinstance(weight, str) else self.parse_time(weight)
+                        anim = anim_tuple
+                        anim_duration = duration_frames
+                    result.extend(self._flatten_animations(anim, start_frame, anim_duration))
+            elif mode == 'stagger':
+                # Each starts after i*stagger, all finish at total duration
+                if n == 1 or stagger == 0:
+                    per_duration = duration_frames
                 else:
-                    anim = anim_tuple
-                    anim_duration = duration_frames
-                result.extend(self._flatten_animations(anim, start_frame, anim_duration))
+                    per_duration = duration_frames - stagger * (n - 1)
+                    per_duration = max(per_duration, 0)
+                for i, anim_tuple in enumerate(anims):
+                    if isinstance(anim_tuple, tuple):
+                        anim, weight = anim_tuple
+                        if isinstance(weight, str):
+                            anim_duration = self.parse_time(weight)
+                        else:
+                            anim_duration = per_duration if not isinstance(weight, str) else self.parse_time(weight)
+                    else:
+                        anim = anim_tuple
+                        anim_duration = per_duration
+                    child_start = start_frame + i * stagger
+                    result.extend(self._flatten_animations(anim, child_start, anim_duration))
+            elif mode == 'chain':
+                # Each starts after previous ends, with gap=stagger
+                total_gap = stagger * (n - 1)
+                if n == 1:
+                    per_duration = duration_frames
+                else:
+                    per_duration = (duration_frames - total_gap) // n if duration_frames > total_gap else 0
+                child_start = start_frame
+                for i, anim_tuple in enumerate(anims):
+                    if isinstance(anim_tuple, tuple):
+                        anim, weight = anim_tuple
+                        if isinstance(weight, str):
+                            anim_duration = self.parse_time(weight)
+                        else:
+                            anim_duration = per_duration if not isinstance(weight, str) else self.parse_time(weight)
+                    else:
+                        anim = anim_tuple
+                        anim_duration = per_duration
+                    result.extend(self._flatten_animations(anim, child_start, anim_duration))
+                    child_start += anim_duration + stagger
         elif hasattr(animation, 'component') and hasattr(animation, 'prop'):
             result.append((animation.component, animation.prop, animation, start_frame, start_frame + duration_frames, duration_frames))
         return result
