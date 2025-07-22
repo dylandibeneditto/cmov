@@ -3,6 +3,6 @@ from cmov.components import *
 
 if __name__ == "__main__":
     scene = Scene(800,800, fps=100)
-    boxes = [Box(i*20+100, 100) for i in range(20)]
-    scene.play(CompositeAnimation.stagger(*[box.fadein(easing=ease_out_bounce) for box in boxes], stagger="5"), "1s")
+    text = [Text("Hola world lalalalalala", x=100, y=i*42+100, size=32, color="#ffffff") for i in range(10)]
+    scene.play(CompositeAnimation.stagger(*[t.fadein() for t in text], stagger="0.1s"), "1s")
     scene.render()
