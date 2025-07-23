@@ -134,7 +134,7 @@ class Scene:
                     total_frames += float(value) * 60 * self.fps
                 elif unit == 'h':
                     total_frames += float(value) * 3600 * self.fps
-            return int(total_frames)
+            return int(total_frames+0.5)
         return 0
 
     def _render_animation(self, animation, img, draw, timeline):
