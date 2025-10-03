@@ -16,8 +16,6 @@ class Box(Component):
         self.color = color
 
     def render(self, image, draw):
-        # Debug: print opacity and position for fade-in/move
-        if self.opacity < 1: print(f"[Box.render] x={self.x}, y={self.y}, opacity={self.opacity}, scale={self.scale}")
         box_img = Image.new("RGBA", image.size, (0, 0, 0, 0))
         box_draw = ImageDraw.Draw(box_img)
         fill = self._with_alpha(self.color, self.opacity)
@@ -33,13 +31,6 @@ class Box(Component):
             rgb = tuple(int(color[i:i+lv//3], 16) for i in range(0, lv, lv//3))
             return (*rgb, int(255 * opacity))
         return color
-
-
-    def zoom_and_slide(self):
-        return CompositeAnimation.parallel(
-            (self.moveto(100,100), 2),
-            (self.scaleto(2.0), "1s")
-        )
 
 
     def bouncein(self):

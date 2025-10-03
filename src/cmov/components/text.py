@@ -5,7 +5,7 @@ from ..core.animation import Animation
 from ..core.composite_anim import CompositeAnimation
 from ..easing.curves import *
 from PIL import ImageFilter
-
+from .align import Align
 
 class Character(Component):
     def __init__(self, char, x, y, size=12, color="#ffffff", opacity=1.0, font_path=None, font=None):
@@ -47,7 +47,8 @@ class Character(Component):
         return color
 
 class Text(Component):
-    def __init__(self, text="", x=0, y=0, size=12, color="#ffffff", font_path="SF-Pro-Text-Medium.otf"):
+    def __init__(self, text="", x=0, y=0, size=12, color="#ffffff", font_path="SF-Pro-Text-Medium.otf",
+                 align: Align = Align.TOP_LEFT, multiline=True, line_spacing=1.2):
         super().__init__()
         self.text = text
         self.x = x
@@ -55,24 +56,42 @@ class Text(Component):
         self.size = size
         self.color = color
         self.font_path = font_path
+        self.align = align
+        self.multiline = multiline
+        self.line_spacing = line_spacing
         self.characters = []
         self._init_characters()
 
     def _init_characters(self):
+        from .align import get_aligned_position
         self.characters = []
         try:
             font = ImageFont.truetype(self.font_path, self.size) if self.font_path else ImageFont.load_default()
         except IOError:
             font = ImageFont.load_default()
-        x_cursor = self.x
-        for char in self.text:
-            self.characters.append(Character(char, x_cursor, self.y, self.size, self.color, opacity=0.0, font_path=self.font_path, font=font))
-            if hasattr(font, "getlength"):
-                char_width = font.getlength(char)
-            else:
-                bbox = font.getbbox(char)
-                char_width = bbox[2] - bbox[0] if bbox else self.size
-            x_cursor += char_width
+        lines = self.text.split("\n") if self.multiline else [self.text]
+        total_height = len(lines) * self.size * self.line_spacing
+        line_widths = [sum(font.getlength(c) if hasattr(font, "getlength") else (font.getbbox(c)[2] - font.getbbox(c)[0] if font.getbbox(c) else self.size) for c in line) for line in lines]
+        max_line_width = max(line_widths) if line_widths else 0
+
+        # Get base position for the whole block
+        base_x, base_y = get_aligned_position(self.x, self.y, max_line_width, total_height, self.align)
+
+        y_cursor = base_y
+        for i, line in enumerate(lines):
+            line_width = line_widths[i]
+            # Get aligned position for each line
+            line_x, _ = get_aligned_position(self.x, self.y, line_width, total_height, self.align)
+            x_cursor = line_x
+            for char in line:
+                self.characters.append(Character(char, x_cursor, y_cursor, self.size, self.color, opacity=0.0, font_path=self.font_path, font=font))
+                if hasattr(font, "getlength"):
+                    char_width = font.getlength(char)
+                else:
+                    bbox = font.getbbox(char)
+                    char_width = bbox[2] - bbox[0] if bbox else self.size
+                x_cursor += char_width
+            y_cursor += self.size * self.line_spacing
 
     def render(self, image, draw):
         for char in self.characters:
@@ -82,9 +101,28 @@ class Text(Component):
         return CompositeAnimation.stagger(*[
             CompositeAnimation.parallel(*[
                 Animation(char, prop="opacity", start=0.2, end=1.0, easing=easing),
-                (Animation(char, prop="y", start=self.y, end=self.y-self.size//2, easing=easing), 2),
-                Animation(char, prop="blur", start=5, end=0.0, easing=easing)
+                (Animation(char, prop="y", start=char.y, end=char.y-self.size//2, easing=easing), 2),
+                Animation(char, prop="blur", start=5.0, end=0.0, easing=easing)
             ]) for char in self.characters], stagger=stagger)
+
+    def fadeout(self, stagger="0.02s", easing=ease_in):
+        return CompositeAnimation.stagger(*[
+            CompositeAnimation.parallel(*[
+                Animation(char, prop="opacity", start=1.0, end=0.0, easing=easing),
+                (Animation(char, prop="y", start=char.y-self.size//2, end=char.y, easing=easing), 2),
+                Animation(char, prop="blur", start=0.0, end=5.0, easing=easing)
+            ]) for char in self.characters], stagger=stagger)
+
+    def move_to(self, new_x, new_y, duration="0.5s", easing=ease_in_out):
+        dx = new_x - self.x
+        dy = new_y - self.y
+        return CompositeAnimation.parallel(*[
+            Animation(char, prop="x", start=char.x, end=char.x + dx, easing=easing)
+            for char in self.characters
+        ] + [
+            Animation(char, prop="y", start=char.y, end=char.y + dy, easing=easing)
+            for char in self.characters
+        ])
 
     def _with_alpha(self, color, opacity):
         if color.startswith('#'):
