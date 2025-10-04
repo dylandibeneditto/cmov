@@ -79,6 +79,7 @@ class Scene:
         self.fps = fps
         self.timeline = []
         self.components = []
+        self.audios = []  # list of (path, start_time)
 
     def add(self, component):
         if component not in self.components:
@@ -109,6 +110,9 @@ class Scene:
     def wait(self, duration):
         self.timeline.append((None, duration))
 
+    def sound(self, path, at, volume=0.4):
+        self.audios.append((path, at, volume))
+    
     def parse_time(self, t):
         """
         Parses a time string or int into a number of frames (for self.frames).
@@ -177,6 +181,12 @@ class Scene:
         total_frames = max_end_frame
 
         with Video(output_path, (self.width, self.height), fps=self.fps) as video:
+            # register audio tracks with Video if any
+            for a_path, start_time, volume in self.audios:
+                try:
+                    video.sound(a_path, start_time, volume)
+                except Exception as e:
+                    print(f"Warning: failed to register audio {a_path} at {start_time}: {e}")
             frame_counter = 0
             segment_start_values = {}
             for frame_idx in tqdm(range(total_frames), unit="frames"):

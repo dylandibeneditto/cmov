@@ -60,6 +60,7 @@ class Text(Component):
         self.multiline = multiline
         self.line_spacing = line_spacing
         self.characters = []
+        self.width, self.height = (0,0)
         self._init_characters()
 
     def _init_characters(self):
@@ -76,6 +77,9 @@ class Text(Component):
 
         # Get base position for the whole block
         base_x, base_y = get_aligned_position(self.x, self.y, max_line_width, total_height, self.align)
+        base_y += self.size * 0.4
+        self.width = max_line_width
+        self.height = total_height
 
         y_cursor = base_y
         for i, line in enumerate(lines):
