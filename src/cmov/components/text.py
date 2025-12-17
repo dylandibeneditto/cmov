@@ -77,7 +77,7 @@ class Text(Component):
 
         # Get base position for the whole block
         base_x, base_y = get_aligned_position(self.x, self.y, max_line_width, total_height, self.align)
-        base_y += self.size * 0.4
+        #base_y += self.size * 0.4
         self.width = max_line_width
         self.height = total_height
 
@@ -101,19 +101,19 @@ class Text(Component):
         for char in self.characters:
             char.render(image, draw)
 
-    def fadein(self, stagger="0.02s", easing=ease_out):
+    def fadein(self, stagger="0.02s", easing=ease_out_bounce):
         return CompositeAnimation.stagger(*[
             CompositeAnimation.parallel(*[
-                Animation(char, prop="opacity", start=0.2, end=1.0, easing=easing),
-                (Animation(char, prop="y", start=char.y, end=char.y-self.size//2, easing=easing), 2),
-                Animation(char, prop="blur", start=5.0, end=0.0, easing=easing)
+                Animation(char, prop="opacity", start=0.0, end=1.0, easing=easing),
+                (Animation(char, prop="y", start=char.y+self.size*0.4, end=char.y, easing=easing), 2),
+                Animation(char, prop="blur", start=2.0, end=0.0, easing=easing)
             ]) for char in self.characters], stagger=stagger)
 
     def fadeout(self, stagger="0.02s", easing=ease_in):
         return CompositeAnimation.stagger(*[
             CompositeAnimation.parallel(*[
                 Animation(char, prop="opacity", start=1.0, end=0.0, easing=easing),
-                (Animation(char, prop="y", start=char.y-self.size//2, end=char.y, easing=easing), 2),
+                (Animation(char, prop="y", start=char.y, end=char.y+self.size*0.4, easing=easing), 2),
                 Animation(char, prop="blur", start=0.0, end=5.0, easing=easing)
             ]) for char in self.characters], stagger=stagger)
 
