@@ -229,12 +229,14 @@ class Scene:
                             last_end = -1
                             last_duration = None
                             last_start_value = None
+                            last_start = None
                             for comp, p, anim, start, end, duration in flat_animations:
                                 if comp is component and p == prop:
                                     if end <= frame_idx and end > last_end:
                                         last_anim = anim
                                         last_end = end
                                         last_duration = duration
+                                        last_start = start
                                         seg_key = (id(component), prop, start)
                                         last_start_value = segment_start_values.get(seg_key, getattr(component, prop))
                             if last_anim is not None:

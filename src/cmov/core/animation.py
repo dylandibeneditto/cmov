@@ -5,10 +5,19 @@ class Animation:
         self._initial_start = start
         self.end = end
         self.easing = easing
+        self._started = False
+        self._actual_start = None
 
     def apply(self, t, duration, scene=None, start_value=None):
-        # Always animate from self._initial_start to self.end
-        start = self._initial_start
+        if not self._started:
+            if start_value is not None:
+                self._actual_start = start_value
+            else:
+                self._actual_start = getattr(self.component, self.prop)
+            self._started = True
+        
+        start = self._actual_start
+        
         if duration == 0:
             progress = 1.0
         else:
