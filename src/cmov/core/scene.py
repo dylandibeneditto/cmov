@@ -3,6 +3,14 @@ from fmov import Video
 from ..utils.time import parse_time
 from tqdm import tqdm
 
+class _InstantAddAnimation:
+    def __init__(self, component):
+        self.component = component
+        self.prop = "_present"
+
+    def apply(self, t, duration, scene=None, start_value=None):
+        return
+
 class Scene:
     def _flatten_animations(self, animation, start_frame, duration_frames):
         """
@@ -84,6 +92,8 @@ class Scene:
     def add(self, component):
         if component not in self.components:
             self.components.append(component)
+            instant = _InstantAddAnimation(component)
+            self.timeline.append((instant, 0))
 
     def play(self, animation, duration=None):
         def add_components_from_anim(anim):
