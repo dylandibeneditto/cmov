@@ -189,8 +189,10 @@ class Scene:
                     print(f"Warning: failed to register audio {a_path} at {start_time}: {e}")
             frame_counter = 0
             segment_start_values = {}
+            # Sort components by z_index for consistent render order
+            sorted_components = sorted(self.components, key=lambda c: getattr(c, 'z_index', 0))
             for frame_idx in tqdm(range(total_frames), unit="frames"):
-                for component in self.components:
+                for component in sorted_components:
                     # Only render component if its first animation has started
                     if component in component_first_frame and frame_idx < component_first_frame[component]:
                         continue
@@ -229,7 +231,7 @@ class Scene:
                                 last_anim.apply(last_duration, last_duration, scene=self, start_value=last_start_value)
                 img = Image.new("RGBA", (self.width, self.height), (0,0,0,0))
                 draw = ImageDraw.Draw(img)
-                for component in self.components:
+                for component in sorted_components:
                     if component in component_first_frame and frame_idx < component_first_frame[component]:
                         continue
                     component.render(img, draw)
