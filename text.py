@@ -21,13 +21,14 @@ if __name__ == "__main__":
         scene.play(bg.fadein(), "0.5s")
         txt = Text(
             text=f"{align.name}\nMultiline", 
-            x=x, y=y, size=64, color="#%02x%02x%02x" % (255 - i*20, 100 + i*10, 150),
+            x=x, y=y, size=70, color="#afafaf", #"#%02x%02x%02x" % (255 - i*20, 100 + i*10, 150),
             align=align, multiline=True, line_spacing=2
         )
         aligned_pos = get_aligned_position(txt.x, txt.y, txt.width, txt.height, align)
         background = Box(
-            x=aligned_pos[0], y=aligned_pos[1], width=txt.width, height=txt.height, color="#101010"
+            x=aligned_pos[0], y=aligned_pos[1], width=txt.width, height=txt.height, color="#ffffff"
         )
         scene.play(CompositeAnimation.parallel(background.fadein(), txt.fadein()), "0.5s")
+        scene.play(txt.fadeout(), "0.5s")
 
     scene.render()

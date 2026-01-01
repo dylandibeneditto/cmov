@@ -1,5 +1,6 @@
 *.mp4
 index.py
+text.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

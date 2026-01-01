@@ -29,14 +29,23 @@ class Character(Component):
             bbox = font.getbbox(self.char)
             char_width = bbox[2] - bbox[0] if bbox else self.size
         char_height = self.size * 2  # generous height for blur
-        char_img = Image.new("RGBA", (char_width, char_height), (0, 0, 0, 0))
+        
+        # Add padding for blur to prevent edge darkening
+        blur_padding = max(int(self.blur * 2), 0) if self.blur > 0 else 0
+        padded_width = char_width + blur_padding * 2
+        padded_height = char_height + blur_padding * 2
+        
+        char_img = Image.new("RGBA", (padded_width, padded_height), (0, 0, 0, 0))
         char_draw = ImageDraw.Draw(char_img)
         fill = self._with_alpha(self.color, self.opacity)
-        char_draw.text((0, 0), self.char, font=font, fill=fill)
+        # Draw text in the center of the padded image
+        char_draw.text((blur_padding, blur_padding), self.char, font=font, fill=fill)
+        
         if self.blur > 0:
             char_img = char_img.filter(ImageFilter.GaussianBlur(self.blur))
-        # Paste the blurred character at the correct position
-        image.paste(char_img, (int(self.x), int(self.y)), char_img)
+        
+        # Paste the blurred character at the correct position, accounting for padding offset
+        image.paste(char_img, (int(self.x - blur_padding), int(self.y - blur_padding)), char_img)
 
     def _with_alpha(self, color, opacity):
         if color.startswith('#'):
