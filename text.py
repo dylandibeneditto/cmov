@@ -3,7 +3,7 @@ from src.cmov.components import *
 from PIL import ImageFont
 
 if __name__ == "__main__":
-    scene = Scene(1080, 1080, fps=30)
+    scene = Scene(1080, 1080, fps=24)
 
     aligns = [
         Align.TOP_LEFT, Align.LEFT, Align.BOTTOM_LEFT,
@@ -21,7 +21,7 @@ if __name__ == "__main__":
         scene.play(bg.fadein(), "0.5s")
         txt = Text(
             text=f"{align.name}\nMultiline", 
-            x=x, y=y, size=70, color="#afafaf", #"#%02x%02x%02x" % (255 - i*20, 100 + i*10, 150),
+            x=x, y=y, size=70, color="#000000", #"#%02x%02x%02x" % (255 - i*20, 100 + i*10, 150),
             align=align, multiline=True, line_spacing=2
         )
         aligned_pos = get_aligned_position(txt.x, txt.y, txt.width, txt.height, align)

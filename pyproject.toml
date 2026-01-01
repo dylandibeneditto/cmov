@@ -1,6 +1,6 @@
 [project]
 name = "cmov"
-version = "0.1.7"
+version = "0.1.8"
 description = "A high-level Python library for programmatic timeline-based video animation and dynamic scene creation."
 authors = [
     {name = "Dylan DiBeneditto", email = "dibenedittod@gmail.com"}
